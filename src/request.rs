@@ -33,12 +33,10 @@ impl Machine for Request {
   }
 
   fn id(&self) -> u64 {
-    Register{table_id: TableId::Global(*HTTP_REQUEST), row: TableIndex::All, column: TableIndex::All}.hash()
+    Register{table_id: TableId::Global(*HTTP_REQUEST), row: TableIndex::All, column: TableIndex::Alias(*URI)}.hash()
   }
 
   fn on_change(&mut self, table: &Table) -> Result<(), String> {
-    println!("HTTPREQUEST CHANGED");
-    println!("{:?}", table.rows);
     for i in 1..=table.rows {
       let uri = table.get_string(&TableIndex::Index(i), &TableIndex::Alias(*URI));
       match uri {
@@ -51,8 +49,6 @@ impl Machine for Request {
               Ok(response) => {
                 if response.status().is_success() {
                   let text = response.text().unwrap();
-                  println!("SENDING A TXN");
-                  println!("Got TExt {:?}", text);
                   outgoing.send(RunLoopMessage::Transaction(Transaction{changes: vec![
                     Change::Set{table_id: *HTTP_REQUEST, values: vec![(row, TableIndex::Alias(*RESPONSE), Value::from_string(&text))]},
                     Change::InternString{string: text},
